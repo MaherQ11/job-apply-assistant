@@ -30,9 +30,17 @@ export function buildPrompt(jobText, profile, match) {
 3. These keywords are in the job ad but NOT in my profile: ${missing}. Do NOT claim them anywhere (not in the summary, bullets, skills, or cover letter).
 4. Every bullet must have a "source_id" that is an id from MY PROFILE (experience or projects) and must only use facts from that item.
 5. Keep all numbers exactly as they appear in my profile. Do not add new numbers.
-6. Bullets: start with a strong past-tense action verb, no "I", max 25 words each, 2-4 bullets per item. Only include items relevant to this job.
-7. Summary: 3-4 sentences, third person without a name (e.g. "Data analyst with..."), focused on this job.
-8. Cover letter: English, max 200 words, addressed to the hiring team. Mention the company and job title if the ad states them. Sign it with my name.
+   Describe my languages exactly at the level listed in "languages" — never upgrade them (e.g. do not write "fluent").
+6. Bullets: start with a strong past-tense action verb, no "I", max 25 words each, 2-4 bullets per item.
+   Order items AND bullets by relevance to the job's main responsibilities — most relevant first.
+   Only include items that help for this job. Leave out technical details the ad doesn't ask for
+   (e.g. frameworks, security mechanisms) when the role is not a technical/engineering one.
+7. Summary: max 3 sentences, third person without a name. Sentence 1: who I am in terms of THIS role.
+   Then the 2 strongest pieces of evidence for this job. No long comma-separated lists.
+8. Cover letter: English, max 200 words, addressed to the hiring team, signed with my name. 3 short paragraphs:
+   (1) the job title and company (if the ad states them) + one line on why I fit;
+   (2) my 2-3 strongest facts, each linked to a specific responsibility or requirement from the ad;
+   (3) a short closing. Do not reuse sentences from the summary.
 9. Respond with ONLY one JSON code block matching the format below — no extra text.
 
 ## OUTPUT FORMAT
@@ -174,6 +182,16 @@ export function checkTailored(responseText, profile) {
   }
 
   scan("Cover letter", out.cover_letter);
+
+  // Language level must not be upgraded (e.g. "fluent English" when the profile says otherwise)
+  const langLevels = (profile.languages || []).map((l) => `${l.name} ${l.level}`.toLowerCase()).join(" ");
+  const allText = [out.summary, out.cover_letter, ...data.experience.flatMap((e) => e.bullets), ...data.projects.flatMap((p) => p.bullets)]
+    .join(" ").toLowerCase();
+  for (const word of ["fluent", "fluency", "bilingual", "native english", "advanced english"]) {
+    if (allText.includes(word) && !langLevels.includes(word)) {
+      warnings.push(`Language: says "${word}", but your profile level is different — fix it`);
+    }
+  }
 
   return { ok: errors.length === 0, errors, warnings: [...new Set(warnings)], data };
 }

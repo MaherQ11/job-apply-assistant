@@ -11,10 +11,29 @@
     }
   },
   "skills": {
-    "languages": ["Python", "SQL"],
-    "tools": ["Excel", "Power BI"],
-    "methods": ["Data Cleaning", "Dashboards"]
+    "languages": [
+      "Python",
+      "SQL"
+    ],
+    "tools": [
+      "Excel",
+      "Power BI"
+    ],
+    "methods": [
+      "Data Cleaning",
+      "Dashboards"
+    ]
   },
+  "languages": [
+    {
+      "name": "Arabic",
+      "level": "Native"
+    },
+    {
+      "name": "English",
+      "level": "Professional working proficiency"
+    }
+  ],
   "education": [
     {
       "id": "edu_bsc",
@@ -37,7 +56,11 @@
         "Built a weekly sales dashboard in Power BI used by 3 regional managers",
         "Automated an Excel reporting task with Python, saving ~4 hours per week"
       ],
-      "skills": ["Power BI", "Python", "Excel"]
+      "skills": [
+        "Power BI",
+        "Python",
+        "Excel"
+      ]
     }
   ],
   "projects": [
@@ -45,11 +68,20 @@
       "id": "proj_retail",
       "name": "Retail Sales Analysis",
       "link": "",
-      "bullets": ["Analyzed 50K transactions with SQL and pandas to find top-selling categories"],
-      "skills": ["SQL", "Python"]
+      "bullets": [
+        "Analyzed 50K transactions with SQL and pandas to find top-selling categories"
+      ],
+      "skills": [
+        "SQL",
+        "Python"
+      ]
     }
   ],
   "certifications": [
-    { "id": "cert_sql", "name": "SQL for Data Science", "issuer": "Example Academy" }
+    {
+      "id": "cert_sql",
+      "name": "SQL for Data Science",
+      "issuer": "Example Academy"
+    }
   ]
 }

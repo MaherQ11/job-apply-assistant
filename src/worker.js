@@ -106,6 +106,12 @@ function validateProfile(p) {
     }
   }
 
+  if (p.languages !== undefined) {
+    if (!Array.isArray(p.languages) || !p.languages.every((l) => isObj(l) && isStr(l.name) && isStr(l.level))) {
+      errors.push("languages: must be a list of { name, level }");
+    }
+  }
+
   if (p.skills !== undefined) {
     if (!isObj(p.skills)) errors.push("skills: must be an object of lists");
     else {

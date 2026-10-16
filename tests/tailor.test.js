@@ -65,6 +65,13 @@ test("highlighted skills not in the profile are removed", () => {
   assert.ok(r.warnings.some((w) => w.includes("Spark")));
 });
 
+test("highlighted skill proven by a bullet (not in skills list) is kept", () => {
+  // "Dashboards" isn't in skills, but exp_a says "Built Power BI dashboards"
+  const r = checkTailored(reply({ ...good, skills_to_highlight: ["Dashboards", "Tableau"] }), profile);
+  assert.deepEqual(r.data.skills_to_highlight, ["Dashboards"]);
+  assert.ok(r.warnings.some((w) => w.includes("Tableau")));
+});
+
 test("finds the real answer even when the whole prompt is pasted before it", () => {
   const ad = "Need SQL, Python and Tableau for this role please.";
   const prompt = buildPrompt(ad, profile, matchJob(ad, profile));
@@ -89,4 +96,12 @@ test("garbage reply gives a clear error", () => {
   const r = checkTailored("Sorry, I can't help with that.", profile);
   assert.equal(r.ok, false);
   assert.match(r.errors[0], /JSON/);
+});
+
+test("upgrading the language level (e.g. 'fluent') is flagged", () => {
+  const withLang = { ...profile, languages: [{ name: "English", level: "Working proficiency" }] };
+  const r = checkTailored(reply({ ...good, summary: "Data analyst, fluent in English." }), withLang);
+  assert.ok(r.warnings.some((w) => w.includes('"fluent"')));
+  const ok = checkTailored(reply(good), withLang);
+  assert.ok(!ok.warnings.some((w) => w.startsWith("Language")));
 });

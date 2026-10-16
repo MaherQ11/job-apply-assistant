@@ -101,7 +101,7 @@ Requires Node.js 18+ (21+ for `npm test`).
 npm install
 cp .dev.vars.example .dev.vars        # then set APP_TOKEN to a long random string
 npm run dev                           # http://localhost:8787
-npm test                              # 24 unit tests
+npm test                              # 25 unit tests
 ```
 
 In the UI, paste your token, then open `data/profile.example.json` (or your own `profile.local.json`) and click **Save profile**.
@@ -121,6 +121,7 @@ npm run deploy
 {
   "contact": { "name": "...", "email": "...", "title": "...", "location": "..." },
   "skills": { "languages": ["Python", "SQL"], "tools": ["Excel", "Power BI"] },
+  "languages": [ { "name": "English", "level": "Working proficiency" } ],
   "experience": [
     { "id": "exp_company", "title": "...", "company": "...", "start": "2026-08", "end": "present",
       "bullets": ["..."], "skills": ["..."] }
