@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.dev.vars
+.DS_Store
+
+# بياناتك الحقيقية — ما ترتفع على GitHub
+data/*.local.json

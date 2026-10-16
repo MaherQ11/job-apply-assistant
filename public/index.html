@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Apply Assistant</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #6b7280;
+      --accent: #2563eb; --ok: #15803d; --err: #b91c1c; --border: #e5e7eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f1218; --card: #171b23; --text: #e6e9ef; --muted: #9aa3b2; --border: #262c38; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           background: var(--bg); color: var(--text); }
+    main { max-width: 860px; margin: 48px auto; padding: 0 16px; }
+    h1 { margin: 0 0 4px; font-size: 1.6rem; }
+    h2 { margin: 0 0 12px; font-size: 1.05rem; }
+    p.sub { margin: 0 0 24px; color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input[type=password] { flex: 1; min-width: 200px; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: 8px; background: transparent; color: var(--text); font-size: 1rem; }
+    textarea { width: 100%; min-height: 380px; margin-top: 12px; padding: 12px; border: 1px solid var(--border);
+               border-radius: 8px; background: transparent; color: var(--text);
+               font: 13px/1.5 ui-monospace, Consolas, monospace; resize: vertical; }
+    button, .filebtn { background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+             padding: 10px 16px; font-size: .95rem; cursor: pointer; }
+    button.secondary, .filebtn { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .filebtn input { display: none; }
+    .status { margin-top: 12px; font-family: ui-monospace, monospace; font-size: .9rem;
+              word-break: break-word; white-space: pre-wrap; }
+    .ok { color: var(--ok); } .err { color: var(--err); }
+    .hint { color: var(--muted); font-size: .85rem; margin-top: 8px; }
+    textarea.job { min-height: 200px; font-family: system-ui, sans-serif; font-size: 14px; }
+    .score { display: flex; align-items: center; gap: 16px; margin: 16px 0 8px; }
+    .score-num { font-size: 2.4rem; font-weight: 700; min-width: 90px; }
+    .bar { flex: 1; height: 10px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .bar > div { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
+    .chip { padding: 4px 10px; border-radius: 99px; font-size: .85rem; border: 1px solid var(--border); }
+    .chip.hit { border-color: var(--ok); color: var(--ok); }
+    .chip.miss { border-color: var(--err); color: var(--err); }
+    .chip b { font-weight: 700; }
+    .label { font-size: .85rem; font-weight: 600; margin-top: 8px; }
+    #matchResult[hidden], #promptBox[hidden], #tailorResult[hidden] { display: none; }
+    .step { font-size: .8rem; font-weight: 700; color: var(--accent); text-transform: uppercase;
+            letter-spacing: .04em; margin: 18px 0 6px; }
+    textarea.short { min-height: 160px; }
+    .msgs { margin: 12px 0 0; padding-left: 20px; font-size: .9rem; }
+    .msgs.errs li { color: var(--err); }
+    .msgs.warns li { color: #b45309; }
+    .out { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 14px; }
+    .out-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .out-head h3 { margin: 0; font-size: .95rem; }
+    .out-body { white-space: pre-wrap; font-size: .92rem; line-height: 1.55; margin-top: 6px; }
+    .out-body ul { margin: 4px 0 10px; padding-left: 20px; white-space: normal; }
+    .out-body .item { font-weight: 600; margin-top: 8px; white-space: normal; }
+    button.small { padding: 5px 10px; font-size: .8rem; }
+    a.link { color: var(--accent); font-size: .9rem; }
+
+    /* ---- Tracker ---- */
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .tile { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+    .tile .n { font-size: 1.5rem; font-weight: 700; }
+    .tile .l { font-size: .78rem; color: var(--muted); }
+    .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .form input, .form select, .tbl select { padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--card); color: var(--text); font-size: .92rem; width: 100%; }
+    .form .wide { grid-column: 1 / -1; }
+    .tbl-wrap { overflow-x: auto; margin-top: 12px; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+    .tbl th, .tbl td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .tbl th { font-size: .78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .tbl td.notes { color: var(--muted); max-width: 220px; }
+    .tbl select { padding: 5px 6px; font-size: .85rem; width: auto; }
+    .st-applied { color: var(--accent); } .st-interview { color: #b45309; }
+    .st-rejected { color: var(--err); } .st-offer { color: var(--ok); }
+    button.icon { background: transparent; color: var(--muted); border: 0; padding: 4px 6px; font-size: 1rem; }
+    button.icon:hover { color: var(--err); }
+    .attached { color: var(--ok); font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Job Apply Assistant</h1>
+    <p class="sub">CV tailoring + application tracker</p>
+
+    <!-- ===== Token ===== -->
+    <div class="card">
+      <h2>Access token</h2>
+      <div class="row">
+        <input id="tokenInput" type="password" placeholder="Paste your APP_TOKEN" autocomplete="off" />
+        <button id="saveTokenBtn">Save</button>
+        <button id="clearTokenBtn" class="secondary">Clear</button>
+        <button id="authBtn" class="secondary">Test</button>
+      </div>
+      <div class="hint">Stored only in this browser. Sent with every API request.</div>
+      <div id="tokenStatus" class="status"></div>
+    </div>
+
+    <!-- ===== Applications tracker ===== -->
+    <div class="card">
+      <div class="out-head">
+        <h2 style="margin:0">Applications</h2>
+        <div class="row">
+          <button id="refreshAppsBtn" class="secondary small">Refresh</button>
+          <button id="exportCsvBtn" class="secondary small">Export CSV</button>
+        </div>
+      </div>
+
+      <div id="tiles" class="tiles" style="margin-top:14px"></div>
+
+      <div class="step">Add application</div>
+      <div class="form">
+        <input id="fCompany" placeholder="Company *" />
+        <input id="fTitle" placeholder="Job title *" />
+        <input id="fLocation" placeholder="Location" />
+        <input id="fDate" type="date" />
+        <select id="fStatus">
+          <option value="applied">Applied</option>
+          <option value="interview">Interview</option>
+          <option value="rejected">Rejected</option>
+          <option value="offer">Offer</option>
+        </select>
+        <input id="fScore" type="number" min="0" max="100" placeholder="Match %" />
+        <input id="fUrl" class="wide" placeholder="Job ad link (https://...)" />
+        <input id="fNotes" class="wide" placeholder="Notes" />
+      </div>
+      <div class="row">
+        <button id="addAppBtn">Add</button>
+        <span id="attachedNote" class="attached"></span>
+      </div>
+      <div id="appsStatus" class="status"></div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Company</th><th>Title</th><th>Match</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="appsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== Match ===== -->
+    <div class="card">
+      <h2>Match a job</h2>
+      <div class="row">
+        <button id="matchBtn">Analyze match</button>
+        <button id="clearJobBtn" class="secondary">Clear</button>
+      </div>
+      <textarea id="jobText" class="job" placeholder="Paste the full job ad here (English or Arabic)…"></textarea>
+      <div id="matchStatus" class="status"></div>
+
+      <div id="matchResult" hidden>
+        <div class="score">
+          <div id="scoreNum" class="score-num">0%</div>
+          <div class="bar"><div id="scoreBar" style="width:0%"></div></div>
+        </div>
+        <div class="hint" id="scoreHint"></div>
+
+        <div class="label">✓ In your profile</div>
+        <div id="matchedChips" class="chips"></div>
+
+        <div class="label">✗ Missing from your profile</div>
+        <div id="missingChips" class="chips"></div>
+        <div class="hint">Only add a missing keyword to your profile if you really have that skill.
+          <b>×2</b> = mentioned more than once in the ad (counts double). Hover a green chip to see where it's proven.</div>
+      </div>
+    </div>
+
+    <!-- ===== Tailor (copy-paste mode) ===== -->
+    <div class="card">
+      <h2>Tailor CV + cover letter</h2>
+      <div class="hint">Uses the job ad from "Match a job" above. Works with your normal Claude subscription — no API key.</div>
+
+      <div class="step">1 · Generate the prompt</div>
+      <div class="row">
+        <button id="promptBtn">Generate prompt</button>
+      </div>
+      <div id="promptStatus" class="status"></div>
+      <div id="promptBox" hidden>
+        <textarea id="promptText" class="short" readonly></textarea>
+        <div class="row" style="margin-top:8px">
+          <button id="copyPromptBtn">Copy prompt</button>
+          <a class="link" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude ↗</a>
+        </div>
+      </div>
+
+      <div class="step">2 · Paste Claude's reply</div>
+      <textarea id="replyText" class="short" placeholder="Paste Claude's full reply here (the JSON block)…"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button id="checkBtn">Check reply</button>
+      </div>
+      <div id="checkStatus" class="status"></div>
+
+      <div id="tailorResult" hidden>
+        <ul id="errorList" class="msgs errs"></ul>
+        <ul id="warnList" class="msgs warns"></ul>
+        <div id="outputs"></div>
+        <div class="row" style="margin-top:14px">
+          <button id="toTrackerBtn">Save to tracker ↑</button>
+          <span class="hint" style="margin:0">Fills the "Add application" form with this job + the tailored CV.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Profile ===== -->
+    <div class="card">
+      <h2>CV profile</h2>
+      <div class="row">
+        <button id="loadProfileBtn" class="secondary">Load saved</button>
+        <label class="filebtn">Open JSON file…<input id="fileInput" type="file" accept=".json,application/json" /></label>
+        <button id="formatBtn" class="secondary">Format</button>
+        <button id="saveProfileBtn">Save profile</button>
+      </div>
+      <div class="hint">The only source used for tailoring — nothing outside this profile ever goes into your CV.</div>
+      <textarea id="profileText" spellcheck="false" placeholder='{ "contact": { ... }, "experience": [ ... ] }'></textarea>
+      <div id="profileStatus" class="status"></div>
+    </div>
+  </main>
+
+  <script>
+    // ---------- Token storage (this browser only) ----------
+    const TOKEN_KEY = "jaa_token";
+    const $ = (id) => document.getElementById(id);
+
+    function getToken() {
+      try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ""; }
+    }
+    function setToken(value) {
+      try { value ? localStorage.setItem(TOKEN_KEY, value) : localStorage.removeItem(TOKEN_KEY); } catch {}
+    }
+
+    // ---------- API helper: adds the token to every request ----------
+    async function api(path, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      const token = getToken();
+      if (token) headers["Authorization"] = "Bearer " + token;
+      if (options.body) headers["Content-Type"] = "application/json";
+
+      const res = await fetch(path, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(`${res.status} — ${data.error || "request failed"}`);
+        err.details = data.details;
+        throw err;
+      }
+      return data;
+    }
+
+    function show(el, text, ok) {
+      el.textContent = text;
+      el.className = "status " + (ok ? "ok" : "err");
+    }
+
+    // ---------- Token card ----------
+    $("tokenInput").value = getToken();
+    $("saveTokenBtn").addEventListener("click", () => {
+      setToken($("tokenInput").value.trim());
+      show($("tokenStatus"), "Token saved.", true);
+      loadApps();
+    });
+    $("clearTokenBtn").addEventListener("click", () => {
+      setToken("");
+      $("tokenInput").value = "";
+      show($("tokenStatus"), "Token cleared.", true);
+    });
+    $("authBtn").addEventListener("click", async () => {
+      try {
+        await api("/api/auth-check");
+        show($("tokenStatus"), "Token OK ✓", true);
+      } catch (err) {
+        show($("tokenStatus"), "Error: " + err.message, false);
+      }
+    });
+
+    // Shared state between cards (filled by Match / Prompt / Check, used by "Save to tracker")
+    let lastScore = null;
+    let lastTailored = null;
+    let pendingTailored = null; // tailored data attached to the next "Add"
+
+    // ---------- Match card ----------
+    function chip(item, cls) {
+      const el = document.createElement("span");
+      el.className = "chip " + cls;
+      el.textContent = item.term;
+      if (item.weight > 1) {
+        const b = document.createElement("b");
+        b.textContent = " ×2";
+        el.appendChild(b);
+      }
+      if (item.evidence) el.title = "Found in: " + item.evidence.join(", ");
+      return el;
+    }
+
+    $("matchBtn").addEventListener("click", async () => {
+      const jobText = $("jobText").value;
+      $("matchStatus").textContent = "Analyzing...";
+      $("matchStatus").className = "status";
+      try {
+        const r = await api("/api/match", { method: "POST", body: JSON.stringify({ job_text: jobText }) });
+        lastScore = r.score;
+        $("matchStatus").textContent = "";
+        $("matchResult").hidden = false;
+        $("scoreNum").textContent = r.score + "%";
+        $("scoreBar").style.width = r.score + "%";
+        $("scoreHint").textContent =
+          `${r.matched.length} of ${r.total_terms} keywords found in your profile.` +
+          (r.total_terms === 0 ? " No known keywords detected in this ad." : "");
+
+        $("matchedChips").replaceChildren(...r.matched.map((m) => chip(m, "hit")));
+        $("missingChips").replaceChildren(...r.missing.map((m) => chip(m, "miss")));
+        if (!r.missing.length) $("missingChips").textContent = "Nothing missing ✓";
+      } catch (err) {
+        $("matchResult").hidden = true;
+        show($("matchStatus"), "Error: " + err.message, false);
+      }
+    });
+
+    $("clearJobBtn").addEventListener("click", () => {
+      $("jobText").value = "";
+      $("matchResult").hidden = true;
+      $("matchStatus").textContent = "";
+    });
+
+    // ---------- Tailor card ----------
+    async function copyText(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = btn.textContent;
+        btn.textContent = "Copied ✓";
+        setTimeout(() => (btn.textContent = old), 1500);
+      } catch {
+        alert("Copy failed — select the text and press Ctrl+C.");
+      }
+    }
+
+    $("promptBtn").addEventListener("click", async () => {
+      $("promptStatus").textContent = "Building prompt...";
+      $("promptStatus").className = "status";
+      try {
+        const r = await api("/api/prompt", { method: "POST", body: JSON.stringify({ job_text: $("jobText").value }) });
+        lastScore = r.match.score;
+        $("promptText").value = r.prompt;
+        $("promptBox").hidden = false;
+        // New prompt = old reply is no longer valid: clear it so it can't be re-checked by mistake
+        $("replyText").value = "";
+        $("tailorResult").hidden = true;
+        $("checkStatus").textContent = "";
+        show($("promptStatus"), `Ready — match score ${r.match.score}%. Copy it and paste into Claude.`, true);
+      } catch (err) {
+        $("promptBox").hidden = true;
+        show($("promptStatus"), "Error: " + err.message, false);
+      }
+    });
+
+    $("copyPromptBtn").addEventListener("click", (e) => copyText($("promptText").value, e.target));
+
+    // One output block: title + copy button + content
+    function outBlock(title, copyValue, contentEl) {
+      const wrap = document.createElement("div");
+      wrap.className = "out";
+      const head = document.createElement("div");
+      head.className = "out-head";
+      const h = document.createElement("h3");
+      h.textContent = title;
+      const btn = document.createElement("button");
+      btn.className = "secondary small";
+      btn.textContent = "Copy";
+      btn.addEventListener("click", () => copyText(copyValue, btn));
+      head.append(h, btn);
+      contentEl.classList.add("out-body");
+      wrap.append(head, contentEl);
+      return wrap;
+    }
+
+    function textEl(text) {
+      const d = document.createElement("div");
+      d.textContent = text;
+      return d;
+    }
+
+    function itemsEl(items) {
+      const d = document.createElement("div");
+      for (const it of items) {
+        const t = document.createElement("div");
+        t.className = "item";
+        t.textContent = it.label;
+        const ul = document.createElement("ul");
+        for (const b of it.bullets) {
+          const li = document.createElement("li");
+          li.textContent = b;
+          ul.appendChild(li);
+        }
+        d.append(t, ul);
+      }
+      return d;
+    }
+
+    const itemsAsText = (items) =>
+      items.map((it) => it.label + "\n" + it.bullets.map((b) => "• " + b).join("\n")).join("\n\n");
+
+    function fillList(el, list) {
+      el.replaceChildren(...list.map((m) => {
+        const li = document.createElement("li");
+        li.textContent = m;
+        return li;
+      }));
+    }
+
+    $("checkBtn").addEventListener("click", async () => {
+      $("checkStatus").textContent = "Checking...";
+      $("checkStatus").className = "status";
+      try {
+        const r = await api("/api/check", { method: "POST", body: JSON.stringify({ response_text: $("replyText").value }) });
+        $("tailorResult").hidden = false;
+        fillList($("errorList"), r.errors);
+        fillList($("warnList"), r.warnings);
+
+        lastTailored = r.data;
+        const outputs = $("outputs");
+        outputs.replaceChildren();
+        if (r.data) {
+          const d = r.data;
+          const job = [d.job.title, d.job.company].filter(Boolean).join(" — ");
+          if (d.summary) outputs.appendChild(outBlock("Professional Summary", d.summary, textEl(d.summary)));
+          if (d.experience.length) outputs.appendChild(outBlock("Experience", itemsAsText(d.experience), itemsEl(d.experience)));
+          if (d.projects.length) outputs.appendChild(outBlock("Projects", itemsAsText(d.projects), itemsEl(d.projects)));
+          if (d.skills_to_highlight.length) {
+            const s = d.skills_to_highlight.join(" · ");
+            outputs.appendChild(outBlock("Skills to highlight", s, textEl(s)));
+          }
+          if (d.cover_letter) outputs.appendChild(outBlock("Cover Letter" + (job ? ` (${job})` : ""), d.cover_letter, textEl(d.cover_letter)));
+        }
+
+        const summary = r.ok
+          ? (r.warnings.length ? `Done — ${r.warnings.length} warning(s) to review (orange).` : "Done — everything is backed by your profile ✓")
+          : `${r.errors.length} problem(s) found (red). Ask Claude to fix them, or regenerate.`;
+        show($("checkStatus"), summary, r.ok);
+        if (r.ok && r.warnings.length) $("checkStatus").style.color = "#b45309";
+        else $("checkStatus").style.color = "";
+      } catch (err) {
+        $("tailorResult").hidden = true;
+        show($("checkStatus"), "Error: " + err.message, false);
+      }
+    });
+
+    // ---------- Applications tracker ----------
+    const STATUS_LABEL = { applied: "Applied", interview: "Interview", rejected: "Rejected", offer: "Offer" };
+    let apps = [];
+    let openDetail = null; // id of the application whose CV is expanded
+    const todayStr = () => new Date().toISOString().slice(0, 10);
+    $("fDate").value = todayStr();
+
+    function renderTiles(s) {
+      const tiles = [
+        [s.total, "Total"],
+        [s.by_status.applied, "Waiting"],
+        [s.by_status.interview, "Interviews"],
+        [s.by_status.offer, "Offers"],
+        [s.by_status.rejected, "Rejected"],
+        [s.response_rate + "%", "Response rate"],
+        [s.avg_match_score === null ? "—" : s.avg_match_score + "%", "Avg match"],
+        [s.last_7_days, "Last 7 days"],
+      ];
+      $("tiles").replaceChildren(...tiles.map(([n, l]) => {
+        const d = document.createElement("div");
+        d.className = "tile";
+        const a = document.createElement("div"); a.className = "n"; a.textContent = n;
+        const b = document.createElement("div"); b.className = "l"; b.textContent = l;
+        d.append(a, b);
+        return d;
+      }));
+    }
+
+    function cell(text, cls) {
+      const td = document.createElement("td");
+      if (cls) td.className = cls;
+      td.textContent = text;
+      return td;
+    }
+
+    function renderTable() {
+      const body = $("appsBody");
+      if (!apps.length) {
+        const tr = document.createElement("tr");
+        const td = cell("No applications yet.", "notes");
+        td.colSpan = 7;
+        tr.appendChild(td);
+        return body.replaceChildren(tr);
+      }
+      body.replaceChildren(...apps.flatMap((a) => {
+        const tr = document.createElement("tr");
+
+        // Title (linked if there's a URL; only http/https links are allowed by the API)
+        const titleTd = document.createElement("td");
+        if (a.url) {
+          const link = document.createElement("a");
+          link.href = a.url; link.target = "_blank"; link.rel = "noopener";
+          link.className = "link"; link.textContent = a.title;
+          titleTd.appendChild(link);
+        } else titleTd.textContent = a.title;
+        if (a.tailored) {
+          const t = document.createElement("button");
+          t.className = "secondary small"; t.style.marginLeft = "6px";
+          t.textContent = openDetail === a.id ? "Hide CV" : "View CV";
+          t.title = "Show the tailored CV + cover letter saved with this application";
+          t.addEventListener("click", () => { openDetail = openDetail === a.id ? null : a.id; renderTable(); });
+          titleTd.appendChild(t);
+        }
+
+        // Status dropdown — saves immediately
+        const stTd = document.createElement("td");
+        const sel = document.createElement("select");
+        sel.className = "st-" + a.status;
+        for (const [v, label] of Object.entries(STATUS_LABEL)) {
+          const o = document.createElement("option");
+          o.value = v; o.textContent = label; o.selected = v === a.status;
+          sel.appendChild(o);
+        }
+        sel.addEventListener("change", async () => {
+          try {
+            await api(`/api/applications/${a.id}`, { method: "PUT", body: JSON.stringify({ status: sel.value }) });
+            await loadApps();
+          } catch (err) { show($("appsStatus"), "Error: " + err.message, false); }
+        });
+        stTd.appendChild(sel);
+
+        // Delete
+        const delTd = document.createElement("td");
+        const del = document.createElement("button");
+        del.className = "icon"; del.title = "Delete"; del.textContent = "✕";
+        del.addEventListener("click", async () => {
+          if (!confirm(`Delete "${a.title}" at ${a.company}?`)) return;
+          try {
+            await api(`/api/applications/${a.id}`, { method: "DELETE" });
+            await loadApps();
+          } catch (err) { show($("appsStatus"), "Error: " + err.message, false); }
+        });
+        delTd.appendChild(del);
+
+        tr.append(
+          cell(a.date_applied),
+          cell(a.company + (a.location ? " · " + a.location : "")),
+          titleTd,
+          cell(a.match_score === null ? "—" : a.match_score + "%"),
+          stTd,
+          cell(a.notes || "", "notes"),
+          delTd,
+        );
+        if (openDetail !== a.id || !a.tailored) return [tr];
+
+        // Detail row: the saved tailored CV, with copy buttons
+        const d = a.tailored;
+        const box = document.createElement("div");
+        if (d.summary) box.appendChild(outBlock("Professional Summary", d.summary, textEl(d.summary)));
+        if (d.experience && d.experience.length) box.appendChild(outBlock("Experience", itemsAsText(d.experience), itemsEl(d.experience)));
+        if (d.projects && d.projects.length) box.appendChild(outBlock("Projects", itemsAsText(d.projects), itemsEl(d.projects)));
+        if (d.skills_to_highlight && d.skills_to_highlight.length) {
+          const sk = d.skills_to_highlight.join(" · ");
+          box.appendChild(outBlock("Skills to highlight", sk, textEl(sk)));
+        }
+        if (d.cover_letter) box.appendChild(outBlock("Cover Letter", d.cover_letter, textEl(d.cover_letter)));
+        const dtr = document.createElement("tr");
+        const dtd = document.createElement("td");
+        dtd.colSpan = 7;
+        dtd.appendChild(box);
+        dtr.appendChild(dtd);
+        return [tr, dtr];
+      }));
+    }
+
+    async function loadApps() {
+      try {
+        const r = await api("/api/applications");
+        apps = r.applications;
+        renderTiles(r.stats);
+        renderTable();
+        $("appsStatus").textContent = "";
+      } catch (err) {
+        show($("appsStatus"), "Error: " + err.message, false);
+      }
+    }
+
+    $("refreshAppsBtn").addEventListener("click", loadApps);
+
+    $("addAppBtn").addEventListener("click", async () => {
+      const scoreRaw = $("fScore").value;
+      const payload = {
+        company: $("fCompany").value,
+        title: $("fTitle").value,
+        location: $("fLocation").value,
+        url: $("fUrl").value,
+        date_applied: $("fDate").value || todayStr(),
+        status: $("fStatus").value,
+        notes: $("fNotes").value,
+        match_score: scoreRaw === "" ? null : Number(scoreRaw),
+        tailored: pendingTailored,
+      };
+      try {
+        await api("/api/applications", { method: "POST", body: JSON.stringify(payload) });
+        for (const id of ["fCompany", "fTitle", "fLocation", "fUrl", "fNotes", "fScore"]) $(id).value = "";
+        $("fDate").value = todayStr();
+        $("fStatus").value = "applied";
+        pendingTailored = null;
+        $("attachedNote").textContent = "";
+        show($("appsStatus"), "Added ✓", true);
+        await loadApps();
+      } catch (err) {
+        const details = err.details ? "\n• " + err.details.join("\n• ") : "";
+        show($("appsStatus"), "Error: " + err.message + details, false);
+      }
+    });
+
+    // From the Tailor card: prefill the form and attach the tailored CV
+    $("toTrackerBtn").addEventListener("click", () => {
+      if (!lastTailored) return;
+      $("fCompany").value = lastTailored.job.company || "";
+      $("fTitle").value = lastTailored.job.title || "";
+      if (lastScore !== null) $("fScore").value = lastScore;
+      pendingTailored = lastTailored;
+      $("attachedNote").textContent = "✓ Tailored CV + cover letter attached";
+      $("fUrl").focus();
+      $("fCompany").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    // CSV export (opens in Excel / Power BI). The BOM keeps Arabic text readable in Excel.
+    $("exportCsvBtn").addEventListener("click", () => {
+      const cols = ["date_applied", "company", "title", "location", "status", "match_score", "url", "notes"];
+      const esc = (v) => {
+        const t = v === null || v === undefined ? "" : String(v);
+        return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+      };
+      const csv = [cols.join(","), ...apps.map((a) => cols.map((c) => esc(a[c])).join(","))].join("\r\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `applications-${todayStr()}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    if (getToken()) loadApps();
+
+    // ---------- Profile card ----------
+    const profileText = $("profileText");
+    const profileStatus = $("profileStatus");
+
+    $("loadProfileBtn").addEventListener("click", async () => {
+      try {
+        const data = await api("/api/profile");
+        if (!data.profile) return show(profileStatus, "No profile saved yet.", false);
+        profileText.value = JSON.stringify(data.profile, null, 2);
+        show(profileStatus, "Loaded. Last saved: " + new Date(data.updated_at).toLocaleString(), true);
+      } catch (err) {
+        show(profileStatus, "Error: " + err.message, false);
+      }
+    });
+
+    $("fileInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      profileText.value = await file.text();
+      e.target.value = ""; // allow re-opening the same file
+      show(profileStatus, `Opened ${file.name} — not saved yet. Click "Save profile".`, true);
+    });
+
+    $("formatBtn").addEventListener("click", () => {
+      try {
+        profileText.value = JSON.stringify(JSON.parse(profileText.value), null, 2);
+        show(profileStatus, "Valid JSON ✓", true);
+      } catch (err) {
+        show(profileStatus, "JSON error: " + err.message, false);
+      }
+    });
+
+    $("saveProfileBtn").addEventListener("click", async () => {
+      let profile;
+      try {
+        profile = JSON.parse(profileText.value);
+      } catch (err) {
+        return show(profileStatus, "JSON error: " + err.message, false);
+      }
+      try {
+        const data = await api("/api/profile", { method: "PUT", body: JSON.stringify(profile) });
+        const c = data.counts;
+        show(profileStatus,
+          `Saved ✓  ${c.experience} experience · ${c.projects} projects · ${c.education} education · ` +
+          `${c.certifications} certifications · ${c.skills} skills`, true);
+      } catch (err) {
+        const details = err.details ? "\n• " + err.details.join("\n• ") : "";
+        show(profileStatus, "Error: " + err.message + details, false);
+      }
+    });
+  </script>
+</body>
+</html>

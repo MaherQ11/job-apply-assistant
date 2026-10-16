@@ -1,0 +1,3 @@
+# انسخ هذا الملف باسم .dev.vars وحط توكن عشوائي طويل.
+# .dev.vars ما يرتفع على GitHub (موجود في .gitignore).
+APP_TOKEN=replace-with-a-long-random-string

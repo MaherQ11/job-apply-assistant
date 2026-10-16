@@ -1,0 +1,16 @@
+name = "job-apply-assistant"
+main = "src/worker.js"
+compatibility_date = "2025-09-01"
+
+# الملفات الثابتة (الواجهة) تُقدَّم مباشرة من مجلد public
+# أي مسار ما له ملف (مثل /api/health) يروح للـ Worker
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# التخزين: KV
+# وقت التجربة المحلية (wrangler dev) يُستخدم تخزين محلي على جهازك، والـ id هنا ما يهم.
+# قبل النشر: شغّل  npx wrangler kv namespace create DB  وحط الـ id اللي يطلع لك مكان القيمة تحت.
+[[kv_namespaces]]
+binding = "DB"
+id = "dda68b9664644ea08c8cf7e08cd1c880"
